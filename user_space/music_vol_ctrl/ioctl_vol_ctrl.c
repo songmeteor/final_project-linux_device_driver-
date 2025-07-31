@@ -3,7 +3,7 @@
  * 멀티 스레딩으로 재생과 볼륨 조절, 일시정지를 동시에 처리합니다.
  */
 #include <stdio.h>
-#include <stdlib.hh>
+#include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
 #include <unistd.h>
