@@ -31,6 +31,7 @@ __used __section("__versions") = {
 	{ 0x607587f4, "cdev_del" },
 	{ 0x3c3ff9fd, "sprintf" },
 	{ 0x6cbbfc54, "__arch_copy_to_user" },
+	{ 0x7682ba4e, "__copy_overflow" },
 	{ 0xf0fdf6cb, "__stack_chk_fail" },
 	{ 0xd9ec4b80, "gpio_to_desc" },
 	{ 0x74f08e6f, "gpiod_get_raw_value" },
@@ -44,4 +45,4 @@ __used __section("__versions") = {
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "8153635902A0153B086436E");
+MODULE_INFO(srcversion, "28EEC017473109D0B4DE337");

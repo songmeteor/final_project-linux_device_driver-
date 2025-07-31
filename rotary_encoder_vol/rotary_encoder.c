@@ -17,8 +17,7 @@
 #define DEBOUNCE_TIME_MS 20
 
 static int counter = 0;
-static int direction = 0; //시계방향 1, 반시계 방향 2
-static bool key_state = false;
+static volatile int key_press_event = 0;
 static int prev_s1 = 0;
 static int prev_s2 = 0;
 
@@ -47,14 +46,18 @@ static struct file_operations fops = {
 static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *off) {
     char msg[16];
     int msg_len;
+    int event_to_send;
 
-    // 'read'가 여러 번 호출되어도 한 번만 값을 보내도록 처리
-    if (*off > 0) {
-        return 0;
-    }
+    // // 'read'가 여러 번 호출되어도 한 번만 값을 보내도록 처리
+    // if (*off > 0) {
+    //     return 0;
+    // }
+
+    event_to_send = key_press_event;
+    key_press_event = 0;
 
     // 현재 카운트 값을 문자열로 변환
-    msg_len = sprintf(msg, "%d\n", counter);
+    msg_len = sprintf(msg, "%d,%d\n", counter, event_to_send);
 
     // 커널 공간의 데이터를 유저 공간으로 복사
     if (copy_to_user(buf, msg, msg_len)) {
@@ -119,10 +122,7 @@ static int my_release(struct inode *inode, struct file *file)
 
 static void debounce_timer_callback(struct timer_list *t)
 {
-   bool curr_key_down = !gpio_get_value(GPIO_KEY);
-
-   if(curr_key_down) key_state = !key_state;
-   	
+   if(!gpio_get_value(GPIO_KEY)) key_press_event = 1;
 }
 
 static irqreturn_t key_handler(int irq, void *dev_id)
@@ -147,13 +147,11 @@ static irqreturn_t irq_handler(int irq, void *dev_id)
              if(prev_state == 0b01 && curr_state == 0b00)
              {
                   if(counter < 0b1111) counter++;
-                  direction = 1; // 시계방향
              }
              // 반시계 방향 (00, 01, 11, 10, 00)
              else if(prev_state == 0b10 && curr_state == 0b00)
              {
                   if(counter > 0) counter--;
-                  direction = 2; // 반시계 방향
              }
          prev_s1 = s1;
          prev_s2 = s2;
