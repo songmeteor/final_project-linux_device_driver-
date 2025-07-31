@@ -54,7 +54,7 @@ static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *
     }
 
     // 현재 카운트 값을 문자열로 변환
-    msg_len = sprintf(msg, "%d\n", rotary_count);
+    msg_len = sprintf(msg, "%d\n", counter);
 
     // 커널 공간의 데이터를 유저 공간으로 복사
     if (copy_to_user(buf, msg, msg_len)) {
