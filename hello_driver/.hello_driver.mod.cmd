@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/hello_driver/hello_driver.mod := printf '%s\n'   hello_driver.o | awk '!x[$$0]++ { print("/home/ubuntu/project2/linux/mymodule/hello_driver/"$$0) }' > /home/ubuntu/project2/linux/mymodule/hello_driver/hello_driver.mod

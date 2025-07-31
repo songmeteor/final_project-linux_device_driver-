@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/rotary_encoder/rotary_encoder.mod := printf '%s\n'   rotary_encoder.o | awk '!x[$$0]++ { print("/home/ubuntu/project2/linux/mymodule/rotary_encoder/"$$0) }' > /home/ubuntu/project2/linux/mymodule/rotary_encoder/rotary_encoder.mod

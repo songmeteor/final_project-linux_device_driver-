@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/mp3_decoder_github/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/ubuntu/project2/linux/mymodule/mp3_decoder_github/Module.symvers -T /home/ubuntu/project2/linux/mymodule/mp3_decoder_github/modules.order -i Module.symvers -e 

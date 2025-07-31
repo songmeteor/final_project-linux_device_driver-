@@ -1,0 +1,60 @@
+/dts-v1/;
+/plugin/;
+
+/ {
+    compatible = "brcm,bcm2711", "brcm,bcm2835";
+
+    /* spidev0 (CS0) 비활성화 */
+    fragment@0 {
+        target = <&spi0>;
+        __overlay__ {
+            spidev0: spidev@0{
+                status = "disabled";
+            };
+        };
+    };
+
+    /* spidev1 (CS1) 비활성화 */
+    fragment@1 {
+        target = <&spi0>;
+        __overlay__ {
+            spidev1: spidev@1{
+                status = "disabled";
+            };
+        };
+    };
+
+    /* 우리 드라이버가 사용할 vs1003-ctrl 등록 */
+    fragment@2 {
+        target = <&spi0>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            vs1003_ctrl: vs1003-ctrl@0 {
+                compatible = "vs1003-ctrl";
+                reg = <0>; /* CS0 */
+                spi-max-frequency = <250000>;
+                device_id = <0>;
+                reset-gpios = <&gpio 26 0>;
+                dreq-gpios = <&gpio 13 0>;
+            };
+        };
+    };
+
+    /* 우리 드라이버가 사용할 vs1003-data 등록 */
+    fragment@3 {
+        target = <&spi0>;
+        __overlay__ {
+            #address-cells = <1>;
+            #size-cells = <0>;
+
+            vs1003_data: vs1003-data@1 {
+                compatible = "vs1003-data";
+                reg = <1>; /* CS1 */
+                spi-max-frequency = <4000000>;
+                device_id = <0>;
+            };
+        };
+    };
+};

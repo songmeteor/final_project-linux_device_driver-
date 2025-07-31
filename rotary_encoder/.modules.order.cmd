@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/rotary_encoder/modules.order := {   echo /home/ubuntu/project2/linux/mymodule/rotary_encoder/rotary_encoder.o; :; } > /home/ubuntu/project2/linux/mymodule/rotary_encoder/modules.order

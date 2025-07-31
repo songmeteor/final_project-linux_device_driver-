@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/mp3_decoder_github/vs10xx.mod := printf '%s\n'   vs10xx_main.o vs10xx_device.o vs10xx_iocomm.o vs10xx_queue.o | awk '!x[$$0]++ { print("/home/ubuntu/project2/linux/mymodule/mp3_decoder_github/"$$0) }' > /home/ubuntu/project2/linux/mymodule/mp3_decoder_github/vs10xx.mod

@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/test/rotary_test.mod := printf '%s\n'   rotary_test.o | awk '!x[$$0]++ { print("/home/ubuntu/project2/linux/mymodule/test/"$$0) }' > /home/ubuntu/project2/linux/mymodule/test/rotary_test.mod

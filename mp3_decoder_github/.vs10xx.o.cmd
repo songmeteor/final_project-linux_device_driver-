@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/mp3_decoder_github/vs10xx.o := aarch64-linux-gnu-ld -EL  -maarch64elf -z noexecstack   -r -o /home/ubuntu/project2/linux/mymodule/mp3_decoder_github/vs10xx.o @/home/ubuntu/project2/linux/mymodule/mp3_decoder_github/vs10xx.mod 
