@@ -1,5 +1,5 @@
 /*
- * 최종 버전: 다중 곡 재생, 볼륨 조절, 일시정지, 곡 넘기기 기능 구현 (버그 수정)
+ * 최종 완성 버전: 모든 기능 통합 및 버그 수정
  */
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,8 +33,16 @@ volatile int request_track_change = 0;
 pthread_mutex_t player_mutex = PTHREAD_MUTEX_INITIALIZER;
 pthread_cond_t player_cond = PTHREAD_COND_INITIALIZER;
 
-unsigned char map_count_to_volume(int count) { /* 이전과 동일 */ return 0; }
-long get_time_diff_ms(struct timespec* start, struct timespec* end) { /* 이전과 동일 */ return 0; }
+unsigned char map_count_to_volume(int count) {
+    int new_volume = 100 - (count * 5);
+    if (new_volume < 0) new_volume = 0;
+    if (new_volume > 254) new_volume = 254;
+    return (unsigned char)new_volume;
+}
+
+long get_time_diff_ms(struct timespec* start, struct timespec* end) {
+    return (end->tv_sec - start->tv_sec) * 1000 + (end->tv_nsec - start->tv_nsec) / 1000000;
+}
 
 // ===================================================================
 //                        재생 스레드 (수정됨)
@@ -120,7 +128,12 @@ void *control_thread_func(void *arg) {
     int click_count = 0;
     struct timespec last_click_time = {0, 0};
 
-    if (rotary_fd < 0 || vs10xx_fd < 0) { /* ... */ return NULL; }
+    if (rotary_fd < 0 || vs10xx_fd < 0) {
+        perror("Control Thread: Failed to open devices");
+        keep_running_threads = 0;
+        pthread_cond_signal(&player_cond);
+        return NULL;
+    }
     printf("Control thread started. Ready for input.\n");
 
     while (keep_running_threads) {
@@ -132,20 +145,20 @@ void *control_thread_func(void *arg) {
                 if (current_count != last_count) {
                     unsigned char volume = map_count_to_volume(current_count);
                     unsigned int packed_volume = (volume << 8) | volume;
-                    if (ioctl(vs10xx_fd, VS10XX_SET_VOL, &packed_volume) == 0) { 
+                    if (ioctl(vs10xx_fd, VS10XX_SET_VOL, &packed_volume) == 0) {
                         printf("Rotary count: %d -> Volume set to: %d\n", current_count, volume);
-                        }
-                    last_count = current_count;    
+                    }
+                    last_count = current_count;
                 }
                 if (key_event == 1) {
                     struct timespec now;
-                    clock_gettime(CLOCK_MONOTONIC, &now); 
-                    if (get_time_diff_ms(&last_click_time, &now) > CLICK_TIMEOUT_MS) { 
-                        click_count = 1; // 타임아웃 지났으면 새로 카운트
+                    clock_gettime(CLOCK_MONOTONIC, &now);
+                    if (get_time_diff_ms(&last_click_time, &now) > CLICK_TIMEOUT_MS) {
+                        click_count = 1;
                     } else {
-                        click_count++; // 연속 클릭
-                        }
-                    last_click_time = now; 
+                        click_count++;
+                    }
+                    last_click_time = now;
                 }
             }
         }
@@ -155,17 +168,22 @@ void *control_thread_func(void *arg) {
             clock_gettime(CLOCK_MONOTONIC, &now);
             if (get_time_diff_ms(&last_click_time, &now) > CLICK_TIMEOUT_MS) {
                 pthread_mutex_lock(&player_mutex);
-                // --- 곡 변경 시 request_track_change를 초기화하는 로직은 여기서는 불필요 ---
-                // request_track_change = 0; // 이 줄을 제거하거나 그대로 둬도 무방
-                if (click_count == 1) { /* ... */ } 
-                else if (click_count == 2) {
+                if (click_count == 1) {
+                    if (playback_state == STATE_PLAYING) {
+                        playback_state = STATE_PAUSED;
+                        printf("|| Paused\n");
+                    } else {
+                        playback_state = STATE_PLAYING;
+                        printf("▶? Resumed\n");
+                    }
+                } else if (click_count == 2) {
                     printf(">> Next Track\n");
                     request_track_change = 1;
                     current_track = (current_track + 1) % num_tracks;
                     playback_state = STATE_PLAYING;
                 } else if (click_count >= 3) {
                     printf("<< Previous Track\n");
-                    request_track_change = 1; // 이전 곡도 현재 곡을 멈춰야 하므로 1
+                    request_track_change = 1;
                     current_track = (current_track - 1 + num_tracks) % num_tracks;
                     playback_state = STATE_PLAYING;
                 }
@@ -192,27 +210,25 @@ int main(void) {
 
     printf("Starting MP3 Player...\n");
 
-    // 초기 볼륨 설정
     int initial_fd = open(vs10xx_dev_path, O_WRONLY);
     if(initial_fd > 0) {
-        unsigned char vol = map_count_to_volume(0); // 카운트 0일때 볼륨
+        unsigned char vol = map_count_to_volume(0);
         unsigned int p_vol = (vol << 8) | vol;
         ioctl(initial_fd, VS10XX_SET_VOL, &p_vol);
         close(initial_fd);
     }
     
-    // 스레드 생성
     pthread_create(&playback_thread_id, NULL, playback_thread_func, NULL);
     pthread_create(&control_thread_id, NULL, control_thread_func, NULL);
 
-    // 프로그램 시작 시 자동 재생
     pthread_mutex_lock(&player_mutex);
     playback_state = STATE_PLAYING;
     pthread_cond_signal(&player_cond);
     pthread_mutex_unlock(&player_mutex);
     
-    // 스레드가 끝날 때까지 대기
     pthread_join(playback_thread_id, NULL);
+    
+    keep_running_threads = 0;
     pthread_join(control_thread_id, NULL);
 
     printf("Program terminated.\n");
