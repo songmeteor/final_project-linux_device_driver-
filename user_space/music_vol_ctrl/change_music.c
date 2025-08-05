@@ -16,8 +16,13 @@
 //                        사용자 설정
 // ===================================================================
 const char *playlist[] = {
-    "/home/pi43/music/golden.mp3",
-    "/home/pi43/music/NinjaTuna128k.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/golden.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/NinjaTuna128k.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/Tsukimichi.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/LIKEYOUBETTER.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/FAMOUS.mp3",
+    "/home/pi43/final_project-linux_device_driver-/user_space/music_vol_ctrl/music/DirtyWork.mp3"
+
 };
 const int num_tracks = sizeof(playlist) / sizeof(playlist[0]);
 const char *vs10xx_dev_path = "/dev/vs10xx-0";
