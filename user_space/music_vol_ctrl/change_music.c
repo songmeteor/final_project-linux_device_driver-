@@ -130,10 +130,22 @@ void *control_thread_func(void *arg) {
             read_buf[bytes] = '\0';
             if (sscanf(read_buf, "%d,%d", &current_count, &key_event) == 2) {
                 if (current_count != last_count) {
-                    /* ... */
+                    unsigned char volume = map_count_to_volume(current_count);
+                    unsigned int packed_volume = (volume << 8) | volume;
+                    if (ioctl(vs10xx_fd, VS10XX_SET_VOL, &packed_volume) == 0) { 
+                        printf("Rotary count: %d -> Volume set to: %d\n", current_count, volume);
+                        }
+                    last_count = current_count;    
                 }
                 if (key_event == 1) {
-                    /* ... */
+                    struct timespec now;
+                    clock_gettime(CLOCK_MONOTONIC, &now); 
+                    if (get_time_diff_ms(&last_click_time, &now) > CLICK_TIMEOUT_MS) { 
+                        click_count = 1; // 타임아웃 지났으면 새로 카운트
+                    } else {
+                        click_count++; // 연속 클릭
+                        }
+                    last_click_time = now; 
                 }
             }
         }
