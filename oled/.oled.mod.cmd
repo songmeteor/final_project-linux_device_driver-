@@ -1,0 +1,1 @@
+savedcmd_/home/ubuntu/project2/linux/mymodule/oled/oled.mod := printf '%s\n'   oled.o | awk '!x[$$0]++ { print("/home/ubuntu/project2/linux/mymodule/oled/"$$0) }' > /home/ubuntu/project2/linux/mymodule/oled/oled.mod
