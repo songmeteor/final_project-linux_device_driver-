@@ -194,7 +194,7 @@ static void oled_putc(char c) {
 
     // 폰트 데이터에서 문자에 해당하는 비트맵을 찾아 출력
     for (i = 0; i < FONT_WIDTH; i++) {
-        oled_send_data(font5x7[(c - 32) * FONT_WIDTH + i]);
+        oled_send_data(font5x7[(c - 33) * FONT_WIDTH + i]);
     }
     // 문자 사이에 한 칸 공백 추가
     oled_send_data(0x00);
