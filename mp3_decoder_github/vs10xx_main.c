@@ -14,12 +14,13 @@ MODULE_AUTHOR("Rajiv Biswas");
 MODULE_DESCRIPTION("VS1003/VS1053 Audio Codec Driver");
 
 #define DRIVER_NAME "vs10xx"
-#define VS10XX_IOCTL_BASE 'v'
-#define VS10XX_SET_VOL _IOW(VS10XX_IOCTL_BASE, 1, unsigned int)
+#define VS10XX_IOCTL_BASE 'v' // 리눅스에는 여러 드라이버가 동시에 작동하는데 같은 명령을 보내면 이 명령이 어떤 드라이버의 명령인지 모르기때문에 충돌 방지를 위해 고유한 암호를 정한다.
+#define VS10XX_SET_VOL _IOW(VS10XX_IOCTL_BASE, 1, unsigned int) // 볼륨 설정 명령어 정의, ([고유한 암호], [0:리셋, 1:볼륨설정, 2:사인파 테스트], [user_space에서 커널로 전달할 데이터 타입])
+                                                                // 유저 프로그램이 ioctl(fd, VS10XX_SET_VOL, &volume_data)를 호출하면 커널은 VS10XX_SET_VOL을 보고 v 암호를 쓰는 vs10xx드라이버를 위한 거네! 라고 알 수 있음
 
 static dev_t vs10xx_dev_t;
 struct class *vs10xx_class;
-struct vs10xx_chip vs10xx_chips[VS10XX_MAX_DEVICES];
+struct vs10xx_chip vs10xx_chips[VS10XX_MAX_DEVICES]; //vs10xx_chip는 vs10xx.h에 정의되어있는 칩을 제어하는데 필요한 모든 정보가 있는 구조체
 
 static int vs10xx_open(struct inode *inode, struct file *filp) {
     struct vs10xx_chip *chip = container_of(inode->i_cdev, struct vs10xx_chip, cdev);
@@ -33,27 +34,23 @@ static int vs10xx_release(struct inode *inode, struct file *filp) {
     return 0;
 }
 
-/*
- * vs10xx_main.c 파일의 기존 vs10xx_write 함수를
- * 아래 함수로 전체 교체하세요.
- */
 static ssize_t vs10xx_write(struct file *filp, const char __user *buf, size_t count, loff_t *f_pos) {
     struct vs10xx_chip *chip = filp->private_data;
     size_t total_written = 0;
-    vs10xx_qel_t *qel;
+    vs10xx_qel_t *qel;   // 32byte 버퍼와 다른 32byte의 앞뒤 데이터와 연결할 수 있는 고리가 정의된 vs10xx_qel_t 
 
     // 사용자가 요청한 데이터를 32바이트 청크로 나누어 처리
     while (total_written < count) {
-        vs10xx_qel_t *qel;
+        // vs10xx_qel_t *qel;
         size_t chunk_size = min((size_t)VS10XX_QUEUE_DATA_SIZE, count - total_written);
 
         // 1. 버퍼 풀에서 빈 버퍼를 가져옴 (없으면 대기)
-        if (wait_event_interruptible(chip->tx_wq, (qel = vs10xx_queue_get_head(&chip->tx_pool_q)) != NULL)) {
+        if (wait_event_interruptible(chip->tx_wq, (qel = vs10xx_queue_get_head(&chip->tx_pool_q)) != NULL)) {  // tx_pool_q 에 빈 버퍼가 없을떄(32byte 데이터 2048개 샘플이 모두 tx_data_q 에 대기중일떄) tx_wp에 대기
             return -ERESTARTSYS;
         }
 
         // 2. 사용자 공간에서 데이터를 커널 버퍼로 복사
-        if (copy_from_user(qel->data, buf + total_written, chunk_size)) {
+        if (copy_from_user(qel->data, buf + total_written, chunk_size)) { // write 시스템 콜을 통해 전달한 MP3 데이터 덩어리(buf)에서, 이번에 복사할 부분의 시작 주소에 있는 값을 chunk_size 만큼 qel->data로 복사
             vs10xx_queue_put_tail(&chip->tx_pool_q, qel); // 실패 시 버퍼 반납
             return -EFAULT;
         }
