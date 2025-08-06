@@ -325,9 +325,9 @@ static int __init oled_driver_init(void) {
 
     // 6. OLED 디스플레이 초기화
     oled_display_init();
-    oled_putc('H');
-    oled_putc('i');
-    oled_putc('!');
+    // oled_putc('H');
+    // oled_putc('i');
+    // oled_putc('!');
 
     pr_info("OLED driver initialized successfully\n");
     return 0;
