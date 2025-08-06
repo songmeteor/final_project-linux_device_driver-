@@ -1394,6 +1394,7 @@ deps_/home/ubuntu/project2/linux/mymodule/oled/oled.o := \
   include/linux/delay.h \
   arch/arm64/include/generated/asm/delay.h \
   include/asm-generic/delay.h \
+  /home/ubuntu/project2/linux/mymodule/oled/oled_ui.h \
 
 /home/ubuntu/project2/linux/mymodule/oled/oled.o: $(deps_/home/ubuntu/project2/linux/mymodule/oled/oled.o)
 

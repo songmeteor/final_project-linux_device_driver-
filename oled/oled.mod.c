@@ -18,17 +18,16 @@ __section(".gnu.linkonce.this_module") = {
 
 static const struct modversion_info ____versions[]
 __used __section("__versions") = {
-	{ 0x122c3a7e, "_printk" },
 	{ 0xbb41b493, "i2c_smbus_write_byte_data" },
 	{ 0x60d8647c, "i2c_unregister_device" },
 	{ 0xb477e7f4, "device_destroy" },
 	{ 0x4a41ecb3, "class_destroy" },
 	{ 0x607587f4, "cdev_del" },
 	{ 0x6091b333, "unregister_chrdev_region" },
-	{ 0x52c5c991, "__kmalloc_noprof" },
+	{ 0x122c3a7e, "_printk" },
 	{ 0x12a4e128, "__arch_copy_from_user" },
 	{ 0xdcb764ad, "memset" },
-	{ 0x37a0cba, "kfree" },
+	{ 0xf0fdf6cb, "__stack_chk_fail" },
 	{ 0xe3ec2f2b, "alloc_chrdev_region" },
 	{ 0x5d9d9fd4, "cdev_init" },
 	{ 0xcc335c1c, "cdev_add" },
@@ -38,11 +37,10 @@ __used __section("__versions") = {
 	{ 0xdab9418e, "i2c_new_client_device" },
 	{ 0xcffd5996, "i2c_put_adapter" },
 	{ 0xf9a482f9, "msleep" },
-	{ 0xf0fdf6cb, "__stack_chk_fail" },
 	{ 0x39ff040a, "module_layout" },
 };
 
 MODULE_INFO(depends, "");
 
 
-MODULE_INFO(srcversion, "6B3C1455B01E024DE1A33CB");
+MODULE_INFO(srcversion, "A44607CD2B297971D9790FB");
