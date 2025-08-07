@@ -48,7 +48,7 @@ int main() {
             break;
         }
 
-        usleep(200000); // 0.2초 대기
+        usleep(10000); // 0.2초 대기
         if(is_playing) current_sec++;
     }
 

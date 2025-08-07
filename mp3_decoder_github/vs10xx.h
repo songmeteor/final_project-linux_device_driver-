@@ -34,7 +34,7 @@ struct vs10xx_chip {
     struct gpio_desc *gpio_dreq;   // DREQ GPIO 핀 제어권
 
     struct cdev cdev;   //캐릭터 디바이스 파일을 만들기 위한 정보
-    struct device *dev; /
+    struct device *dev; 
     
     struct spi_message msg; // transfer[0], transfer[1]과 같은 봉투들을 msg라는 택배상자에 담아서 이 상자를 spi_sync()라는 함수에 전달하면 커널의 드라이버가 자동으로 SPI 통신해준다.
     struct spi_transfer transfer[2]; //spi_transfer 는 리눅스 커널이 정의한 구조체, 한번에 연속적으로 주고 받을 데이터 덩어리. ex) transfer[0]에는 tx_buf[4]를 보내고, transfer[1]에는 rx_buf[2]로 답을 받아와라

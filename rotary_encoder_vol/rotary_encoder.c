@@ -48,11 +48,6 @@ static ssize_t my_read(struct file *filp, char __user *buf, size_t len, loff_t *
     int msg_len;
     int event_to_send;
 
-    // // 'read'가 여러 번 호출되어도 한 번만 값을 보내도록 처리
-    // if (*off > 0) {
-    //     return 0;
-    // }
-
     event_to_send = key_press_event;
     key_press_event = 0;
 
