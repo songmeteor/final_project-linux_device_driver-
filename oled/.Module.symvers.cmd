@@ -1,1 +1,0 @@
-savedcmd_/home/ubuntu/project2/linux/mymodule/oled/Module.symvers :=  scripts/mod/modpost -M -m -a      -o /home/ubuntu/project2/linux/mymodule/oled/Module.symvers -T /home/ubuntu/project2/linux/mymodule/oled/modules.order -i Module.symvers -e 

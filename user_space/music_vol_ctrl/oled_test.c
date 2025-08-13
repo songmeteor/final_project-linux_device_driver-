@@ -1,101 +1,60 @@
+// oled_test.c (애니메이션 테스트 버전)
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <fcntl.h>
-#include <unistd.h>
-#include <sys/ioctl.h>
-#include <time.h>
-#include "oled_ui.h"
+#include <unistd.h>      // usleep 함수를 위해 추가
+#include "oled.h"
 
-#define DEVICE_PATH "/dev/oled_dev"
+#define DEVICE_PATH "/dev/oled"
 
 int main() {
     int fd;
-    struct oled_mp3_ui_data ui_data;
-    int current_sec = 0;
-    int total_sec = 259; // 4분 19초
-    int is_playing = 1;
-    int i;
+    struct mp3_ui_data ui_data;
+    int i; // 반복문을 위한 변수
 
+    // 디바이스 파일 열기
     fd = open(DEVICE_PATH, O_WRONLY);
     if (fd < 0) {
-        perror("Failed to open device file");
-        return 1;
+        perror("Failed to open the device file");
+        return -1;
     }
 
-    srand(time(NULL)); // 랜덤 시드 초기화
+    // --- 기본 UI 데이터 설정 (한 번만 설정) ---
+    memset(&ui_data, 0, sizeof(struct mp3_ui_data));
+    ui_data.volume = 11;
+    strncpy(ui_data.current_time, "12:04", sizeof(ui_data.current_time) - 1);
+    ui_data.track_current = 1;
+    ui_data.track_total = 5;
+    strncpy(ui_data.playback_time, "00:32", sizeof(ui_data.playback_time) - 1);
+    strncpy(ui_data.song_title, "Animation Test", sizeof(ui_data.song_title) - 1);
+    strncpy(ui_data.total_time, "02:48", sizeof(ui_data.total_time) - 1);
 
-    strncpy(ui_data.song_title, "Smile.mp3", sizeof(ui_data.song_title) - 1);
-    strncpy(ui_data.track_info, "002/028", sizeof(ui_data.track_info) - 1);
+    printf("Starting spectrum analyzer animation for 10 seconds...\n");
+
+    // --- 100번 반복하며 애니메이션 생성 (100 * 0.1초 = 10초) ---
+    for (i = 0; i < 100; i++) {
+        // 매번 동일한 데이터를 쓰더라도, 드라이버는 랜덤 값을 다시 생성합니다.
+        ssize_t bytes_written = write(fd, &ui_data, sizeof(struct mp3_ui_data));
+
+        if (bytes_written < 0) {
+            perror("Failed to write to the device");
+            break; // 에러 발생 시 반복 중단
+        }
+
+        // 터미널에 진행 상황 출력
+        printf(".");
+        fflush(stdout); // 버퍼를 비워 "."가 바로 보이도록 함
+
+        // 100,000 마이크로초 (0.1초) 동안 대기
+        usleep(200000);
+    }
     
-    printf("Starting MP3 Player UI simulation...\n");
+    printf("\nAnimation test finished.\n");
 
-    while (current_sec <= total_sec) {
-        // 데이터 업데이트
-        snprintf(ui_data.current_time, sizeof(ui_data.current_time), "%02d:%02d", current_sec / 60, current_sec % 60);
-        snprintf(ui_data.total_time, sizeof(ui_data.total_time), "%02d:%02d", total_sec / 60, total_sec % 60);
-        ui_data.progress = (current_sec * 100) / total_sec;
-        ui_data.play_state = is_playing;
-
-        // 시각화 막대 데이터 랜덤 생성
-        for(i = 0; i < VISUALIZER_BARS; i++) {
-            ui_data.visualizer_bars[i] = rand() % 16; // 0~15 높이
-        }
-
-        // ioctl로 드라이버에 데이터 전송
-        if (ioctl(fd, OLED_UPDATE_UI, &ui_data) < 0) {
-            perror("ioctl failed");
-            break;
-        }
-
-        usleep(10000); // 0.2초 대기
-        if(is_playing) current_sec++;
-    }
-
-    printf("Simulation finished.\n");
+    // 디바이스 파일 닫기
     close(fd);
+
     return 0;
 }
-
-// #include <stdio.h>
-// #include <stdlib.h>
-// #include <string.h>
-// #include <fcntl.h>
-// #include <unistd.h>
-
-// #define DEVICE_PATH "/dev/oled_dev"
-
-// int main(int argc, char *argv[]) {
-//     int fd;
-//     char *write_buf;
-
-//     if (argc < 2) {
-//         fprintf(stderr, "Usage: %s <message to display>\n", argv[0]);
-//         fprintf(stderr, "       %s -c (to clear screen)\n", argv[0]);
-//         return 1;
-//     }
-
-//     fd = open(DEVICE_PATH, O_WRONLY);
-//     if (fd < 0) {
-//         perror("Failed to open device file");
-//         return 1;
-//     }
-
-//     if (strcmp(argv[1], "-c") == 0) {
-//         // 화면을 지우기 위해 폼 피드 문자를 전송
-//         write_buf = "\f";
-//         write(fd, write_buf, 1);
-//         printf("Clear command sent to OLED.\n");
-//     } else {
-//         write_buf = argv[1];
-//         int len = strlen(write_buf);
-//         if (write(fd, write_buf, len) != len) {
-//             perror("Failed to write to device");
-//         } else {
-//             printf("Message sent to OLED: %s\n", write_buf);
-//         }
-//     }
-
-//     close(fd);
-//     return 0;
-// }
