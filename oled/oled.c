@@ -31,6 +31,9 @@ static struct i2c_client *oled_client;
 static unsigned char oled_buffer[SCREEN_WIDTH * SCREEN_PAGES];
 
 extern const unsigned char font5x7[];
+static const unsigned char icon_speaker[] = {
+    0x18, 0x3C, 0x3C, 0x7E, 0xC3, 0xFF, 0xFF
+};
 
 // ===================================================================
 // == OLED 제어 함수 (하드웨어 종속적인 부분) - 완성된 버전 ==
@@ -183,7 +186,7 @@ static void draw_volume(int level) {
     
     for (i = 0; i < 5; i++) {
         if (level >= thresholds[i]) {
-            oled_draw_rect(2 + i * 4, 11 - bar_heights[i], 3, bar_heights[i], 1);
+            oled_draw_rect(10 + i * 4, 11 - bar_heights[i], 3, bar_heights[i], 1);
         }
     }
 }
@@ -198,6 +201,20 @@ static void draw_spectrum_analyzer(void) {
     }
 }
 
+static void oled_draw_bitmap(int x, int y, int w, int h, const unsigned char *bitmap) {
+    int i, j;
+    // 비트맵의 모든 픽셀을 순회
+    for (j = 0; j < h; j++) { // 세로 (y)
+        for (i = 0; i < w; i++) { // 가로 (x)
+            // 비트맵 데이터에서 현재 픽셀이 켜져 있는지 확인
+            // (비트맵은 세로 8픽셀이 1바이트로 구성됨)
+            if ( (bitmap[i] >> j) & 1 ) {
+                // 켜져 있다면, 화면의 해당 위치에 픽셀을 그림
+                oled_draw_pixel(x + i, y + j, 1);
+            }
+        }
+    }
+}
 
 // UI 전체 업데이트
 static void update_display(struct mp3_ui_data *data) {
@@ -206,6 +223,7 @@ static void update_display(struct mp3_ui_data *data) {
     oled_clear_buffer();
 
     // 1) 볼륨
+	oled_draw_bitmap(2, 2, 8, 8, icon_speaker);
     draw_volume(data->volume);
     // 2) 현재 시간
     oled_draw_string(48, 2, data->current_time);
