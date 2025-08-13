@@ -13,6 +13,9 @@ struct mp3_ui_data {
     unsigned int track_current;
     unsigned int track_total;
 
+    // 4 막대 그래프 애니메이션 run / stop
+    int spectrum_run_stop;
+
     // 5) 곡 재생 시간 (MM:SS) - 예: "01:23"
     char playback_time[6];
 

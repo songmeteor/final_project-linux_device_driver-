@@ -218,6 +218,7 @@ void *ui_thread_func(void *arg) {
         int track_idx = player_state.track_current;
         int count = player_state.rotary_count;
         int current_sec = player_state.song_current_sec;
+        int spectrum_run_stop = player_state.play_state;
         pthread_mutex_unlock(&state_mutex);
         
         // --- UI 데이터 구조체 채우기 ---
@@ -234,6 +235,8 @@ void *ui_thread_func(void *arg) {
         ui_data.track_current = track_idx + 1;
         ui_data.track_total = num_tracks;
         
+        ui_data.spectrum_run_stop = spectrum_run_stop;
+
         // 5. 재생 시간
         snprintf(ui_data.playback_time, sizeof(ui_data.playback_time), "%02d:%02d", current_sec / 60, current_sec % 60);
         
