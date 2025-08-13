@@ -213,7 +213,7 @@ static void update_display(struct mp3_ui_data *data) {
     snprintf(temp_str, sizeof(temp_str), "%02d/%02d", data->track_current, data->track_total);
     oled_draw_string(90, 2, temp_str);
     // 4) 스펙트럼 분석기
-    draw_spectrum_analyzer();
+	if(!data->spectrum_run_stop) draw_spectrum_analyzer();
     // 5) 현재 재생 시간
     oled_draw_string(4, 54, data->playback_time);
     // 6) 곡 제목 (가운데 정렬)
