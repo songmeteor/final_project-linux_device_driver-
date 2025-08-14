@@ -304,7 +304,7 @@ static int __init mp3_oled_init(void) {
     mp3_class = class_create(CLASS_NAME);
     if (IS_ERR(mp3_class)) {
         unregister_chrdev_region(dev_num, 1);
-        return PTR_ERR(mp3_class);
+        return PTR_ERR(mp3_class); 
     }
     // 3. 디바이스 파일 생성
     if (device_create(mp3_class, NULL, dev_num, NULL, DEVICE_NAME) == NULL) {

@@ -26,7 +26,6 @@ const char *playlist[] = {
 
 };
 
-const int song_durations[] = { 259, 180, 240, 210, 220, 185 }; // 각 곡의 총 재생 시간 (초)
 const int num_tracks = sizeof(playlist) / sizeof(playlist[0]);
 
 const char *vs10xx_dev_path = "/dev/vs10xx-0";
@@ -41,6 +40,7 @@ typedef struct {
     int track_current;
     PlaybackState play_state;
     int song_current_sec;
+    int song_total_sec;
 } SharedState;
 
 SharedState player_state;
@@ -55,6 +55,36 @@ void *control_thread_func(void *arg);
 void *ui_thread_func(void *arg);
 long get_time_diff_ms(struct timespec* start, struct timespec* end);
 
+
+// ffprobe를 이용해 MP3 파일의 재생 시간(초)을 얻어오는 함수
+int get_mp3_duration(const char *filepath) {
+    char command[1024];
+    FILE *fp;
+    double duration = 0.0;
+
+    // ffprobe 명령어 생성: 파일의 duration(재생 시간) 정보만 초 단위 숫자로 출력하도록 함
+    snprintf(command, sizeof(command), 
+             "ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 \"%s\"", 
+             filepath);
+
+    // popen() 함수로 명령어를 실행하고, 그 결과를 파이프로 읽어옴
+    fp = popen(command, "r");
+    if (fp == NULL) {
+        fprintf(stderr, "Failed to run ffprobe for %s\n", filepath);
+        return 0;
+    }
+
+    // 결과(예: "259.012345")를 double 타입으로 읽음
+    if (fscanf(fp, "%lf", &duration) != 1) {
+        duration = 0; // 읽기 실패 시 0으로 처리
+    }
+
+    pclose(fp);
+
+    // 소수점 이하는 버리고 정수 초 단위로 반환
+    return (int)duration;
+}
+
 int main(void) {
     pthread_t playback_tid, control_tid, ui_tid;
 
@@ -63,6 +93,7 @@ int main(void) {
     player_state.track_current = 0;
     player_state.play_state = STATE_PLAYING;
     player_state.song_current_sec = 0;
+    player_state.song_total_sec = get_mp3_duration(playlist[0]);
 
     pthread_create(&playback_tid, NULL, playback_thread_func, NULL);
     pthread_create(&control_tid, NULL, control_thread_func, NULL);
@@ -89,38 +120,45 @@ void *playback_thread_func(void *arg) {
     while (keep_running_threads) {
         pthread_mutex_lock(&state_mutex);
         int track_to_play = player_state.track_current;
+        player_state.song_total_sec = get_mp3_duration(playlist[track_to_play]);
+        player_state.song_current_sec = 0;        
         pthread_mutex_unlock(&state_mutex);
 
         const char* file_to_play = playlist[track_to_play];
         FILE *fptr = fopen(file_to_play, "rb");
         if (fptr == NULL) { /* ... */ continue; }
 
-        printf("\n▶? Now Playing: %s\n", file_to_play);
+        printf("\n Now Playing: %s\n", file_to_play);
         
-        long file_size = 0;
-        fseek(fptr, 0, SEEK_END);
-        file_size = ftell(fptr);
-        fseek(fptr, 0, SEEK_SET);
+        struct timespec song_start_time;
+        long paused_ms = 0; // 일시정지된 총 시간을 저장할 변수
+        clock_gettime(CLOCK_MONOTONIC, &song_start_time);
 
         char buffer[4096];
         size_t bytes_read;
         while ((bytes_read = fread(buffer, 1, sizeof(buffer), fptr)) > 0) {
             pthread_mutex_lock(&state_mutex);
+            struct timespec pause_start_time;
             while (player_state.play_state == STATE_PAUSED && !request_track_change) {
+                clock_gettime(CLOCK_MONOTONIC, &pause_start_time);
                 pthread_cond_wait(&player_cond, &state_mutex);
+                struct timespec now;
+                clock_gettime(CLOCK_MONOTONIC, &now); // 재생 재개 시간 기록
+                paused_ms += get_time_diff_ms(&pause_start_time, &now); // 정지된 시간 누적
             }
             if (request_track_change || !keep_running_threads) {
                 pthread_mutex_unlock(&state_mutex);
                 break;
             }
             pthread_mutex_unlock(&state_mutex);
-            
             if (write(vs10xx_fd, buffer, bytes_read) < 0) break;
+
+            struct timespec now;
+            clock_gettime(CLOCK_MONOTONIC, &now);
+            long elapsed_ms = get_time_diff_ms(&song_start_time, &now) - paused_ms;
             
             pthread_mutex_lock(&state_mutex);
-            if (file_size > 0) {
-                player_state.song_current_sec = (ftell(fptr) * song_durations[track_to_play]) / file_size;
-            }
+            player_state.song_current_sec = elapsed_ms / 1000;
             pthread_mutex_unlock(&state_mutex);
         }
         fclose(fptr);
@@ -187,8 +225,8 @@ void *control_thread_func(void *arg) {
             if (get_time_diff_ms(&last_click_time, &now) > CLICK_TIMEOUT_MS) {
                 pthread_mutex_lock(&state_mutex);
                 if (click_count == 1) { player_state.play_state = !player_state.play_state; } 
-                else if (click_count == 2) { request_track_change = 1; player_state.track_current = (player_state.track_current + 1) % num_tracks; }
-                else if (click_count >= 3) { request_track_change = 1; player_state.track_current = (player_state.track_current - 1 + num_tracks) % num_tracks; }
+                else if (click_count == 2) { request_track_change = 1; player_state.song_current_sec = 0; player_state.track_current = (player_state.track_current + 1) % num_tracks; }
+                else if (click_count >= 3) { request_track_change = 1; player_state.song_current_sec = 0; player_state.track_current = (player_state.track_current - 1 + num_tracks) % num_tracks; }
                 if(player_state.play_state == STATE_PLAYING) pthread_cond_signal(&player_cond);
                 pthread_mutex_unlock(&state_mutex);
                 click_count = 0;
@@ -219,6 +257,7 @@ void *ui_thread_func(void *arg) {
         int count = player_state.rotary_count;
         int current_sec = player_state.song_current_sec;
         int spectrum_run_stop = player_state.play_state;
+        int total_sec = player_state.song_total_sec;
         pthread_mutex_unlock(&state_mutex);
         
         // --- UI 데이터 구조체 채우기 ---
@@ -249,7 +288,6 @@ void *ui_thread_func(void *arg) {
         }
         
         // 7. 전체 시간
-        int total_sec = song_durations[track_idx];
         snprintf(ui_data.total_time, sizeof(ui_data.total_time), "%02d:%02d", total_sec / 60, total_sec % 60);
 
         // --- OLED 드라이버로 데이터 전송 ---
@@ -268,3 +306,4 @@ void *ui_thread_func(void *arg) {
 long get_time_diff_ms(struct timespec* start, struct timespec* end) {
     return (end->tv_sec - start->tv_sec) * 1000 + (end->tv_nsec - start->tv_nsec) / 1000000;
 }
+
